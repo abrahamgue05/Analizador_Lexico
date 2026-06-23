@@ -36,6 +36,9 @@ Partial Class Form1
         ComboBox1 = New ComboBox()
         Label1 = New Label()
         TabPage3 = New TabPage()
+        Label3 = New Label()
+        Label2 = New Label()
+        ListView2 = New ListView()
         TextBox3 = New TextBox()
         MenuStrip1 = New MenuStrip()
         ArchivoToolStripMenuItem = New ToolStripMenuItem()
@@ -68,9 +71,6 @@ Partial Class Form1
         ToolStripButton4 = New ToolStripButton()
         ToolStripButton5 = New ToolStripButton()
         ToolStripButton6 = New ToolStripButton()
-        ListView2 = New ListView()
-        Label2 = New Label()
-        Label3 = New Label()
         TabControl1.SuspendLayout()
         TabPage1.SuspendLayout()
         TabPage2.SuspendLayout()
@@ -116,7 +116,7 @@ Partial Class Form1
         ' 
         ' TextBox2
         ' 
-        TextBox2.Location = New Point(87, 17)
+        TextBox2.Location = New Point(87, 18)
         TextBox2.Name = "TextBox2"
         TextBox2.Size = New Size(159, 23)
         TextBox2.TabIndex = 2
@@ -199,6 +199,36 @@ Partial Class Form1
         TabPage3.TabIndex = 2
         TabPage3.Text = "Edicion"
         TabPage3.UseVisualStyleBackColor = True
+        ' 
+        ' Label3
+        ' 
+        Label3.AutoSize = True
+        Label3.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label3.Location = New Point(507, 17)
+        Label3.Name = "Label3"
+        Label3.Size = New Size(46, 15)
+        Label3.TabIndex = 3
+        Label3.Text = "Tokens"
+        ' 
+        ' Label2
+        ' 
+        Label2.AutoSize = True
+        Label2.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label2.Location = New Point(12, 17)
+        Label2.Name = "Label2"
+        Label2.Size = New Size(45, 15)
+        Label2.TabIndex = 2
+        Label2.Text = "Codigo"
+        ' 
+        ' ListView2
+        ' 
+        ListView2.GridLines = True
+        ListView2.Location = New Point(507, 47)
+        ListView2.Name = "ListView2"
+        ListView2.Size = New Size(268, 369)
+        ListView2.TabIndex = 1
+        ListView2.UseCompatibleStateImageBehavior = False
+        ListView2.View = View.Details
         ' 
         ' TextBox3
         ' 
@@ -438,36 +468,6 @@ Partial Class Form1
         ToolStripButton6.Name = "ToolStripButton6"
         ToolStripButton6.Size = New Size(23, 22)
         ToolStripButton6.Text = "ToolStripButton6"
-        ' 
-        ' ListView2
-        ' 
-        ListView2.GridLines = True
-        ListView2.Location = New Point(507, 47)
-        ListView2.Name = "ListView2"
-        ListView2.Size = New Size(268, 369)
-        ListView2.TabIndex = 1
-        ListView2.UseCompatibleStateImageBehavior = False
-        ListView2.View = View.Details
-        ' 
-        ' Label2
-        ' 
-        Label2.AutoSize = True
-        Label2.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label2.Location = New Point(12, 17)
-        Label2.Name = "Label2"
-        Label2.Size = New Size(45, 15)
-        Label2.TabIndex = 2
-        Label2.Text = "Codigo"
-        ' 
-        ' Label3
-        ' 
-        Label3.AutoSize = True
-        Label3.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label3.Location = New Point(507, 17)
-        Label3.Name = "Label3"
-        Label3.Size = New Size(46, 15)
-        Label3.TabIndex = 3
-        Label3.Text = "Tokens"
         ' 
         ' Form1
         ' 
