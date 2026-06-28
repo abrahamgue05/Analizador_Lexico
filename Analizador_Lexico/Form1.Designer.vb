@@ -39,7 +39,6 @@ Partial Class Form1
         Label3 = New Label()
         Label2 = New Label()
         ListView2 = New ListView()
-        TextBox3 = New TextBox()
         MenuStrip1 = New MenuStrip()
         ArchivoToolStripMenuItem = New ToolStripMenuItem()
         NuevoToolStripMenuItem = New ToolStripMenuItem()
@@ -71,6 +70,7 @@ Partial Class Form1
         ToolStripButton4 = New ToolStripButton()
         ToolStripButton5 = New ToolStripButton()
         ToolStripButton6 = New ToolStripButton()
+        TextBox3 = New RichTextBox()
         TabControl1.SuspendLayout()
         TabPage1.SuspendLayout()
         TabPage2.SuspendLayout()
@@ -189,10 +189,10 @@ Partial Class Form1
         ' 
         ' TabPage3
         ' 
+        TabPage3.Controls.Add(TextBox3)
         TabPage3.Controls.Add(Label3)
         TabPage3.Controls.Add(Label2)
         TabPage3.Controls.Add(ListView2)
-        TabPage3.Controls.Add(TextBox3)
         TabPage3.Location = New Point(4, 24)
         TabPage3.Name = "TabPage3"
         TabPage3.Size = New Size(806, 429)
@@ -229,16 +229,6 @@ Partial Class Form1
         ListView2.TabIndex = 1
         ListView2.UseCompatibleStateImageBehavior = False
         ListView2.View = View.Details
-        ' 
-        ' TextBox3
-        ' 
-        TextBox3.Location = New Point(12, 47)
-        TextBox3.Multiline = True
-        TextBox3.Name = "TextBox3"
-        TextBox3.ScrollBars = ScrollBars.Both
-        TextBox3.Size = New Size(467, 369)
-        TextBox3.TabIndex = 0
-        TextBox3.WordWrap = False
         ' 
         ' MenuStrip1
         ' 
@@ -469,6 +459,14 @@ Partial Class Form1
         ToolStripButton6.Size = New Size(23, 22)
         ToolStripButton6.Text = "ToolStripButton6"
         ' 
+        ' TextBox3
+        ' 
+        TextBox3.Location = New Point(12, 47)
+        TextBox3.Name = "TextBox3"
+        TextBox3.Size = New Size(467, 369)
+        TextBox3.TabIndex = 4
+        TextBox3.Text = ""
+        ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
@@ -532,7 +530,6 @@ Partial Class Form1
     Friend WithEvents ComboBox1 As ComboBox
     Friend WithEvents Label1 As Label
     Friend WithEvents TabPage3 As TabPage
-    Friend WithEvents TextBox3 As TextBox
     Friend WithEvents FormatoToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents FuenteToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ColorToolStripMenuItem As ToolStripMenuItem
@@ -543,5 +540,6 @@ Partial Class Form1
     Friend WithEvents ListView2 As ListView
     Friend WithEvents Label3 As Label
     Friend WithEvents Label2 As Label
+    Friend WithEvents TextBox3 As RichTextBox
 
 End Class
