@@ -26,10 +26,12 @@ Partial Class Form1
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Form1))
         TabControl1 = New TabControl()
         TabPage3 = New TabPage()
+        StatusStrip1 = New StatusStrip()
         TableLayoutPanel1 = New TableLayoutPanel()
+        PictureBoxLineas = New PictureBox()
+        Label3 = New Label()
         TextBox3 = New RichTextBox()
         ListView2 = New ListView()
-        Label3 = New Label()
         Label2 = New Label()
         MenuStrip1 = New MenuStrip()
         ArchivoToolStripMenuItem = New ToolStripMenuItem()
@@ -37,6 +39,7 @@ Partial Class Form1
         AbrirToolStripMenuItem = New ToolStripMenuItem()
         GuardarToolStripMenuItem = New ToolStripMenuItem()
         SalirToolStripMenuItem = New ToolStripMenuItem()
+        ExportarToolStripMenuItem = New ToolStripMenuItem()
         EdicionToolStripMenuItem = New ToolStripMenuItem()
         DeshacerToolStripMenuItem = New ToolStripMenuItem()
         CortarToolStripMenuItem = New ToolStripMenuItem()
@@ -62,9 +65,13 @@ Partial Class Form1
         ToolStripButton4 = New ToolStripButton()
         ToolStripButton5 = New ToolStripButton()
         ToolStripButton6 = New ToolStripButton()
+        btnExportarBarra = New ToolStripButton()
+        lblEstadisticas = New ToolStripStatusLabel()
         TabControl1.SuspendLayout()
         TabPage3.SuspendLayout()
+        StatusStrip1.SuspendLayout()
         TableLayoutPanel1.SuspendLayout()
+        CType(PictureBoxLineas, ComponentModel.ISupportInitialize).BeginInit()
         MenuStrip1.SuspendLayout()
         ToolStrip1.SuspendLayout()
         SuspendLayout()
@@ -74,52 +81,86 @@ Partial Class Form1
         TabControl1.AllowDrop = True
         TabControl1.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
         TabControl1.Controls.Add(TabPage3)
-        TabControl1.Font = New Font("Google Sans Code Medium", 12F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        TabControl1.Font = New Font("Google Sans Code Medium", 9.749999F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         TabControl1.Location = New Point(14, 56)
         TabControl1.Margin = New Padding(5, 4, 5, 4)
         TabControl1.Name = "TabControl1"
         TabControl1.SelectedIndex = 0
-        TabControl1.Size = New Size(1205, 905)
+        TabControl1.Size = New Size(1181, 905)
         TabControl1.TabIndex = 0
         ' 
         ' TabPage3
         ' 
+        TabPage3.Controls.Add(StatusStrip1)
         TabPage3.Controls.Add(TableLayoutPanel1)
-        TabPage3.Controls.Add(Label3)
-        TabPage3.Controls.Add(Label2)
         TabPage3.Font = New Font("Google Sans Code Proportional M", 12F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        TabPage3.Location = New Point(4, 35)
+        TabPage3.Location = New Point(4, 30)
         TabPage3.Margin = New Padding(5, 4, 5, 4)
         TabPage3.Name = "TabPage3"
-        TabPage3.Size = New Size(1197, 866)
+        TabPage3.Size = New Size(1173, 871)
         TabPage3.TabIndex = 2
         TabPage3.Text = "Edicion"
         TabPage3.UseVisualStyleBackColor = True
         ' 
+        ' StatusStrip1
+        ' 
+        StatusStrip1.Items.AddRange(New ToolStripItem() {lblEstadisticas})
+        StatusStrip1.Location = New Point(0, 849)
+        StatusStrip1.Name = "StatusStrip1"
+        StatusStrip1.Size = New Size(1173, 22)
+        StatusStrip1.TabIndex = 6
+        StatusStrip1.Text = "StatusStrip1"
+        ' 
         ' TableLayoutPanel1
         ' 
         TableLayoutPanel1.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
-        TableLayoutPanel1.ColumnCount = 2
+        TableLayoutPanel1.ColumnCount = 3
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 40F))
         TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 55F))
         TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 45F))
-        TableLayoutPanel1.Controls.Add(TextBox3, 0, 0)
-        TableLayoutPanel1.Controls.Add(ListView2, 1, 0)
-        TableLayoutPanel1.Location = New Point(16, 79)
+        TableLayoutPanel1.Controls.Add(PictureBoxLineas, 0, 1)
+        TableLayoutPanel1.Controls.Add(Label3, 2, 0)
+        TableLayoutPanel1.Controls.Add(TextBox3, 1, 1)
+        TableLayoutPanel1.Controls.Add(ListView2, 2, 1)
+        TableLayoutPanel1.Controls.Add(Label2, 1, 0)
+        TableLayoutPanel1.Location = New Point(5, 49)
         TableLayoutPanel1.Margin = New Padding(5, 4, 5, 4)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
-        TableLayoutPanel1.RowCount = 1
+        TableLayoutPanel1.RowCount = 2
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Absolute, 30F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
-        TableLayoutPanel1.Size = New Size(1171, 757)
+        TableLayoutPanel1.Size = New Size(1122, 762)
         TableLayoutPanel1.TabIndex = 5
+        ' 
+        ' PictureBoxLineas
+        ' 
+        PictureBoxLineas.Dock = DockStyle.Fill
+        PictureBoxLineas.Location = New Point(3, 33)
+        PictureBoxLineas.Name = "PictureBoxLineas"
+        PictureBoxLineas.Size = New Size(34, 726)
+        PictureBoxLineas.TabIndex = 6
+        PictureBoxLineas.TabStop = False
+        ' 
+        ' Label3
+        ' 
+        Label3.AutoSize = True
+        Label3.Font = New Font("Google Sans Code Medium", 9.749999F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label3.Location = New Point(640, 0)
+        Label3.Margin = New Padding(5, 0, 5, 0)
+        Label3.Name = "Label3"
+        Label3.Size = New Size(64, 21)
+        Label3.TabIndex = 3
+        Label3.Text = "Tokens"
+        Label3.TextAlign = ContentAlignment.MiddleCenter
         ' 
         ' TextBox3
         ' 
         TextBox3.Dock = DockStyle.Fill
         TextBox3.Font = New Font("Google Sans Code Medium", 11.2499981F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        TextBox3.Location = New Point(5, 4)
+        TextBox3.Location = New Point(45, 34)
         TextBox3.Margin = New Padding(5, 4, 5, 4)
         TextBox3.Name = "TextBox3"
-        TextBox3.Size = New Size(634, 749)
+        TextBox3.Size = New Size(585, 724)
         TextBox3.TabIndex = 4
         TextBox3.Text = ""
         ' 
@@ -127,35 +168,24 @@ Partial Class Form1
         ' 
         ListView2.Dock = DockStyle.Fill
         ListView2.Font = New Font("Google Sans Code Proportional M", 11.2499981F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        ListView2.FullRowSelect = True
         ListView2.GridLines = True
-        ListView2.Location = New Point(649, 4)
+        ListView2.Location = New Point(640, 34)
         ListView2.Margin = New Padding(5, 4, 5, 4)
         ListView2.Name = "ListView2"
-        ListView2.Size = New Size(517, 749)
+        ListView2.Size = New Size(477, 724)
         ListView2.TabIndex = 1
         ListView2.UseCompatibleStateImageBehavior = False
         ListView2.View = View.Details
         ' 
-        ' Label3
-        ' 
-        Label3.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
-        Label3.AutoSize = True
-        Label3.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label3.Location = New Point(665, 30)
-        Label3.Margin = New Padding(5, 0, 5, 0)
-        Label3.Name = "Label3"
-        Label3.Size = New Size(46, 15)
-        Label3.TabIndex = 3
-        Label3.Text = "Tokens"
-        ' 
         ' Label2
         ' 
         Label2.AutoSize = True
-        Label2.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label2.Location = New Point(16, 30)
+        Label2.Font = New Font("Google Sans Code Medium", 8.999999F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label2.Location = New Point(45, 0)
         Label2.Margin = New Padding(5, 0, 5, 0)
         Label2.Name = "Label2"
-        Label2.Size = New Size(45, 15)
+        Label2.Size = New Size(57, 20)
         Label2.TabIndex = 2
         Label2.Text = "Codigo"
         ' 
@@ -166,13 +196,13 @@ Partial Class Form1
         MenuStrip1.Location = New Point(0, 0)
         MenuStrip1.Name = "MenuStrip1"
         MenuStrip1.Padding = New Padding(9, 4, 0, 4)
-        MenuStrip1.Size = New Size(1239, 27)
+        MenuStrip1.Size = New Size(1215, 27)
         MenuStrip1.TabIndex = 1
         MenuStrip1.Text = "MenuStrip1"
         ' 
         ' ArchivoToolStripMenuItem
         ' 
-        ArchivoToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {NuevoToolStripMenuItem, AbrirToolStripMenuItem, GuardarToolStripMenuItem, SalirToolStripMenuItem})
+        ArchivoToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {NuevoToolStripMenuItem, AbrirToolStripMenuItem, GuardarToolStripMenuItem, SalirToolStripMenuItem, ExportarToolStripMenuItem})
         ArchivoToolStripMenuItem.Name = "ArchivoToolStripMenuItem"
         ArchivoToolStripMenuItem.Size = New Size(68, 19)
         ArchivoToolStripMenuItem.Text = "&Archivo"
@@ -207,6 +237,13 @@ Partial Class Form1
         SalirToolStripMenuItem.Name = "SalirToolStripMenuItem"
         SalirToolStripMenuItem.Size = New Size(172, 22)
         SalirToolStripMenuItem.Text = "&Salir"
+        ' 
+        ' ExportarToolStripMenuItem
+        ' 
+        ExportarToolStripMenuItem.Image = My.Resources.Resources._724938
+        ExportarToolStripMenuItem.Name = "ExportarToolStripMenuItem"
+        ExportarToolStripMenuItem.Size = New Size(172, 22)
+        ExportarToolStripMenuItem.Text = "&Exportar"
         ' 
         ' EdicionToolStripMenuItem
         ' 
@@ -325,10 +362,10 @@ Partial Class Form1
         ' ToolStrip1
         ' 
         ToolStrip1.Font = New Font("Consolas", 9.75F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        ToolStrip1.Items.AddRange(New ToolStripItem() {ToolStripButton1, ToolStripButton2, ToolStripButton3, ToolStripSeparator1, ToolStripButton4, ToolStripButton5, ToolStripButton6})
+        ToolStrip1.Items.AddRange(New ToolStripItem() {ToolStripButton1, ToolStripButton2, ToolStripButton3, ToolStripSeparator1, ToolStripButton4, ToolStripButton5, ToolStripButton6, btnExportarBarra})
         ToolStrip1.Location = New Point(0, 27)
         ToolStrip1.Name = "ToolStrip1"
-        ToolStrip1.Size = New Size(1239, 25)
+        ToolStrip1.Size = New Size(1215, 25)
         ToolStrip1.TabIndex = 2
         ToolStrip1.Text = "ToolStrip1"
         ' 
@@ -391,11 +428,27 @@ Partial Class Form1
         ToolStripButton6.Size = New Size(23, 22)
         ToolStripButton6.Text = "ToolStripButton6"
         ' 
+        ' btnExportarBarra
+        ' 
+        btnExportarBarra.DisplayStyle = ToolStripItemDisplayStyle.Image
+        btnExportarBarra.Image = My.Resources.Resources._724938
+        btnExportarBarra.ImageTransparentColor = Color.Magenta
+        btnExportarBarra.Name = "btnExportarBarra"
+        btnExportarBarra.Size = New Size(23, 22)
+        btnExportarBarra.Text = "ToolStripButton7"
+        btnExportarBarra.ToolTipText = "Exportar a Excel"
+        ' 
+        ' lblEstadisticas
+        ' 
+        lblEstadisticas.Name = "lblEstadisticas"
+        lblEstadisticas.Size = New Size(120, 17)
+        lblEstadisticas.Text = "ToolStripStatusLabel1"
+        ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(10F, 26F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(1239, 974)
+        ClientSize = New Size(1215, 974)
         Controls.Add(ToolStrip1)
         Controls.Add(TabControl1)
         Controls.Add(MenuStrip1)
@@ -410,7 +463,11 @@ Partial Class Form1
         TabControl1.ResumeLayout(False)
         TabPage3.ResumeLayout(False)
         TabPage3.PerformLayout()
+        StatusStrip1.ResumeLayout(False)
+        StatusStrip1.PerformLayout()
         TableLayoutPanel1.ResumeLayout(False)
+        TableLayoutPanel1.PerformLayout()
+        CType(PictureBoxLineas, ComponentModel.ISupportInitialize).EndInit()
         MenuStrip1.ResumeLayout(False)
         MenuStrip1.PerformLayout()
         ToolStrip1.ResumeLayout(False)
@@ -457,5 +514,10 @@ Partial Class Form1
     Friend WithEvents Label2 As Label
     Friend WithEvents TextBox3 As RichTextBox
     Friend WithEvents TableLayoutPanel1 As TableLayoutPanel
+    Friend WithEvents PictureBoxLineas As PictureBox
+    Friend WithEvents btnExportarBarra As ToolStripButton
+    Friend WithEvents ExportarToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents StatusStrip1 As StatusStrip
+    Friend WithEvents lblEstadisticas As ToolStripStatusLabel
 
 End Class

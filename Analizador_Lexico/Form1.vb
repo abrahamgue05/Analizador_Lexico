@@ -1,71 +1,70 @@
-﻿Imports System.Text.RegularExpressions ' Importamos la librería para usar Expresiones Regulares (Regex)
+﻿Imports System.Text.RegularExpressions ' Librería esencial para usar Expresiones Regulares (Regex)
+Imports System.Runtime.InteropServices ' Librería para importar funciones nativas de Windows
 
 Public Class Form1
 
+#Region "API DE WINDOWS (Anti-Parpadeo)"
+    ' Importamos SendMessage de user32.dll para pausar el dibujado de la pantalla
+    ' y evitar que el texto parpadee como árbol de navidad al colorear muchas palabras.
+    <DllImport("user32.dll")>
+    Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As Boolean, lParam As Integer) As IntPtr
+    End Function
+    Private Const WM_SETREDRAW As Integer = &HB
+#End Region
+
 #Region "VARIABLES GLOBALES"
-    ' Variable global que guarda la ruta exacta donde está guardado el archivo en la computadora
+
+    ' Variables para controlar el resaltado (Highlighter)
+    Private lastHighlightedStart As Integer = -1
+    Private lastHighlightedLength As Integer = 0
+
+
+    ' Bandera para saber si el editor está ocupado coloreando y evitar bucles infinitos
+    Private pintando As Boolean = False
+
+    ' Guarda la cantidad de texto anterior para detectar si el usuario pegó código de golpe
+    Private lastTextLength As Integer = 0
+
+    ' Ruta exacta donde está guardado el archivo actual
     Dim nombreArchivo As String
 
     ' ====================================================================
-    ' DICCIONARIOS DE DATOS DEL ANALIZADOR LÉXICO (Variables Globales)
+    ' DICCIONARIOS DE DATOS DEL ANALIZADOR LÉXICO
     ' ====================================================================
-    ' DICCIONARIO COMPLETO DE PALABRAS RESERVADAS C++
+    ' DICCIONARIO DE PALABRAS RESERVADAS (Incluye librerías comunes de C/C++)
     Dim reservadas() As String = {"#include", "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand",
-    "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t", "cin", "class", "compl",
+    "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t", "cin", "class", "cmath", "compl",
     "concept", "const", "const_cast", "consteval", "constexpr", "constinit", "continue", "co_await", "co_return",
     "co_yield", "cout", "decltype", "default", "delete", "do", "double", "dynamic_cast", "else", "endl", "enum",
-    "explicit", "export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long",
-    "mutable", "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private",
+    "explicit", "export", "extern", "false", "float", "for", "friend", "fstream", "goto", "if", "inline", "int", "iostream", "long",
+    "math.h", "mutable", "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private",
     "protected", "public", "register", "reinterpret_cast", "requires", "return", "short", "signed", "sizeof",
-    "static", "static_assert", "static_cast", "std", "string", "struct", "switch", "template", "this",
-    "thread_local", "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
+    "static", "static_assert", "static_cast", "std", "stdio.h", "stdlib.h", "string", "struct", "switch", "template", "this",
+    "thread_local", "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "vector",
     "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"}
+
+    ' OPERADORES Y SÍMBOLOS
     Dim operadoresAritmeticos() As String = {"+", "-", "*", "/", "="}
     Dim operadoresRelacionales() As String = {"<", ">"}
-    Dim simbolos() As String = {"{", "}", "(", ")", "[", "]", ";", ","} ' Quité las comillas de aquí porque ahora tienen su propia regla
+    Dim simbolos() As String = {"{", "}", "(", ")", "[", "]", ":", ";", ","}
 #End Region
 
-#Region "MENÚ ARCHIVO (Operaciones del sistema)"
+#Region "EVENTOS DE INICIO"
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ' Forzamos a que se pinte el número "1" de la primera línea al abrir el programa
+        PictureBoxLineas.Invalidate()
+    End Sub
+#End Region
+
+#Region "MENÚ ARCHIVO (Gestión del Documento)"
 
     ' ====================================================================
     ' NUEVO ARCHIVO
     ' ====================================================================
     Private Sub NuevoToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles NuevoToolStripMenuItem.Click
-        TextBox3.Text = ""
-        TabControl1.SelectedIndex = 2
-    End Sub
-
-    ' ====================================================================
-    ' GUARDAR ARCHIVO
-    ' ====================================================================
-    Private Sub GuardarToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles GuardarToolStripMenuItem.Click
-        If TextBox3.Text = "" Then
-            MsgBox("El archivo no puede estar vacio!!!", MsgBoxStyle.Critical, "Contenido vacio!!")
-            TabControl1.SelectedIndex = 2
-        Else
-            nombreArchivo = InputBox("Escribe un nombre para el archivo")
-
-            With SaveFileDialog1
-                .FileName = nombreArchivo
-                .Filter = "Archivos de texto|*.txt|Todos los archivos|*.*"
-
-                If .ShowDialog() = DialogResult.OK Then
-                    nombreArchivo = .FileName
-                    Guardar()
-                End If
-            End With
-        End If
-    End Sub
-
-    ' ====================================================================
-    ' FUNCIÓN AUXILIAR: GUARDAR FÍSICAMENTE EN EL DISCO DURO
-    ' ====================================================================
-    Private Sub Guardar()
-        Dim sw As New IO.StreamWriter(nombreArchivo, False, System.Text.Encoding.Default)
-        For Each linea In TextBox3.Lines
-            sw.WriteLine(linea)
-        Next
-        sw.Close()
+        TabControl1.SelectedIndex = 2 ' Mover a la pestaña del código
+        TextBox3.Text = ""            ' Limpiar el editor
+        ListView2.Items.Clear()       ' Limpiar la tabla de tokens
     End Sub
 
     ' ====================================================================
@@ -73,9 +72,8 @@ Public Class Form1
     ' ====================================================================
     Private Sub AbrirToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles AbrirToolStripMenuItem.Click
         With OpenFileDialog1
-            .Filter = "Archivos de texto|*.txt|Todos los archivos|*.*"
+            .Filter = "Archivos de texto|*.txt|Archivos C++|*.cpp|Todos los archivos|*.*"
             .FileName = ""
-
             If .ShowDialog() = DialogResult.OK Then
                 nombreArchivo = .FileName
                 AbrirArchivo()
@@ -83,22 +81,90 @@ Public Class Form1
         End With
     End Sub
 
-    ' ====================================================================
-    ' FUNCIÓN AUXILIAR: LEER EL ARCHIVO DEL DISCO
-    ' ====================================================================
     Private Sub AbrirArchivo()
         Dim sr As New IO.StreamReader(nombreArchivo, System.Text.Encoding.Default)
-        TextBox3.Text = sr.ReadToEnd()
+        Dim contenidoDelArchivo As String = sr.ReadToEnd()
         sr.Close()
+
+        ' Primero nos movemos a la pestaña para que los colores se apliquen correctamente
         TabControl1.SelectedIndex = 2
+        TextBox3.Text = contenidoDelArchivo
     End Sub
 
     ' ====================================================================
-    ' SALIR DEL PROGRAMA
+    ' EXPORTAR A CSV (Excel)
     ' ====================================================================
+    Private Sub ExportarToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ExportarToolStripMenuItem.Click
+        ' Validamos que haya algo en la tabla
+        If ListView2.Items.Count = 0 Then
+            MessageBox.Show("No hay tokens para exportar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Exit Sub
+        End If
+
+        Dim saveDialog As New SaveFileDialog()
+        saveDialog.Filter = "Archivo Excel (CSV)|*.csv"
+        saveDialog.Title = "Guardar tabla de tokens"
+        saveDialog.FileName = "Tokens_Analizador.csv"
+
+        If saveDialog.ShowDialog() = DialogResult.OK Then
+            Try
+                ' Usamos StreamWriter para crear el archivo .csv
+                Using sw As New IO.StreamWriter(saveDialog.FileName, False, System.Text.Encoding.UTF8)
+                    ' Escribimos la cabecera del archivo
+                    sw.WriteLine("Token,Tipo,Línea,Columna")
+
+                    ' Recorremos cada fila del ListView
+                    For Each item As ListViewItem In ListView2.Items
+                        ' Formateamos las celdas envolviéndolas en comillas para proteger caracteres especiales
+                        Dim lineaCSV As String = String.Format("""{0}"",""{1}"",{2},{3}",
+                                                 item.Text.Replace("""", """"""),
+                                                 item.SubItems(1).Text,
+                                                 item.SubItems(2).Text,
+                                                 item.SubItems(3).Text)
+                        sw.WriteLine(lineaCSV)
+                    Next
+                End Using
+                MessageBox.Show("Archivo exportado con éxito.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Catch ex As Exception
+                MessageBox.Show("Error al exportar: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End If
+    End Sub
+
+#End Region
+
+#Region "Guardado"
+    Private Sub GuardarToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles GuardarToolStripMenuItem.Click
+        If String.IsNullOrWhiteSpace(TextBox3.Text) Then
+            MsgBox("El archivo no puede estar vacío.", MsgBoxStyle.Critical, "Contenido vacío")
+            TabControl1.SelectedIndex = 2
+            Return
+        End If
+
+        nombreArchivo = InputBox("Escribe un nombre para el archivo")
+        With SaveFileDialog1
+            .FileName = nombreArchivo
+            .Filter = "Archivos de texto|*.txt|Todos los archivos|*.*"
+            If .ShowDialog() = DialogResult.OK Then
+                nombreArchivo = .FileName
+                GuardarEnDisco()
+            End If
+        End With
+    End Sub
+
+    Private Sub GuardarEnDisco()
+        Dim sw As New IO.StreamWriter(nombreArchivo, False, System.Text.Encoding.Default)
+        For Each linea In TextBox3.Lines
+            sw.WriteLine(linea)
+        Next
+        sw.Close()
+    End Sub
+
     Private Sub SalirToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles SalirToolStripMenuItem.Click
         End
     End Sub
+
+
 
 #End Region
 
@@ -112,21 +178,15 @@ Public Class Form1
     End Sub
 
     Private Sub CortarToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles CortarToolStripMenuItem.Click
-        If TextBox3.SelectionLength > 0 Then
-            TextBox3.Cut()
-        End If
+        If TextBox3.SelectionLength > 0 Then TextBox3.Cut()
     End Sub
 
     Private Sub CopiarToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles CopiarToolStripMenuItem.Click
-        If TextBox3.SelectionLength > 0 Then
-            TextBox3.Copy()
-        End If
+        If TextBox3.SelectionLength > 0 Then TextBox3.Copy()
     End Sub
 
     Private Sub PegarToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles PegarToolStripMenuItem.Click
-        If Clipboard.ContainsText() Then
-            TextBox3.Paste()
-        End If
+        If Clipboard.ContainsText() Then TextBox3.Paste()
     End Sub
 
     Private Sub SeleccionarTodoToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles SeleccionarTodoToolStripMenuItem.Click
@@ -136,22 +196,19 @@ Public Class Form1
     Private Sub FuenteToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles FuenteToolStripMenuItem.Click
         Dim fontDialog As New FontDialog()
         fontDialog.Font = TextBox3.Font
-        If fontDialog.ShowDialog() = DialogResult.OK Then
-            TextBox3.Font = fontDialog.Font
-        End If
+        If fontDialog.ShowDialog() = DialogResult.OK Then TextBox3.Font = fontDialog.Font
     End Sub
 
     Private Sub ColorToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ColorToolStripMenuItem.Click
         Dim colorDialog As New ColorDialog()
         colorDialog.Color = TextBox3.ForeColor
-        If colorDialog.ShowDialog() = DialogResult.OK Then
-            TextBox3.ForeColor = colorDialog.Color
-        End If
+        If colorDialog.ShowDialog() = DialogResult.OK Then TextBox3.ForeColor = colorDialog.Color
     End Sub
 
 #End Region
 
-#Region "BARRA DE HERRAMIENTAS"
+#Region "BARRA DE HERRAMIENTAS (Accesos Rápidos)"
+    ' Estos botones simplemente llaman a las funciones del menú que ya programamos arriba
     Private Sub ToolStripButton1_Click(sender As Object, e As EventArgs) Handles ToolStripButton1.Click
         Call AbrirToolStripMenuItem_Click(sender, e)
     End Sub
@@ -179,8 +236,7 @@ Public Class Form1
 
 #Region "MENÚ ACERCA DE Y AYUDA"
     Private Sub AcercaDeToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles AcercaDeToolStripMenuItem.Click
-        Dim datos As String = "Analizador lexico" & vbCrLf & "Version: 2.5"
-        MessageBox.Show(datos, "Acerca de este programa", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        MessageBox.Show("Analizador léxico" & vbCrLf & "Versión: 2.5", "Acerca de este programa", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub ListadoDePalabrasReservadasToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ListadoDePalabrasReservadasToolStripMenuItem.Click
@@ -189,9 +245,11 @@ Public Class Form1
     End Sub
 #End Region
 
-#Region "MOTOR DEL ANALIZADOR LÉXICO"
+#Region "MOTOR DEL ANALIZADOR LÉXICO (Scanner)"
 
+    ' Función que determina qué tipo de token es la palabra encontrada
     Private Function ClasificarToken(palabra As String) As String
+        If palabra = "." Then Return "Simbolo"
         If Array.IndexOf(reservadas, palabra) >= 0 Then Return "Palabra Reservada"
         If Array.IndexOf(operadoresAritmeticos, palabra) >= 0 Then Return "Operador Aritmetico"
         If Array.IndexOf(operadoresRelacionales, palabra) >= 0 Then Return "Operador Relacional"
@@ -201,9 +259,11 @@ Public Class Form1
         Return "Desconocido"
     End Function
 
+    ' Evento principal para escanear y separar el texto en la tabla de Tokens
     Private Sub SepararTokensToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles SepararTokensToolStripMenuItem.Click
-        ListView2.Items.Clear()
+        ListView2.Items.Clear() ' Limpiamos escaneos anteriores
 
+        ' Configurar columnas si no existen
         If ListView2.Columns.Count = 0 Then
             ListView2.Columns.Add("Token", 100)
             ListView2.Columns.Add("Tipo", 100)
@@ -213,7 +273,7 @@ Public Class Form1
 
         Dim codigo As String = TextBox3.Text
         If String.IsNullOrWhiteSpace(codigo) Then
-            MessageBox.Show("No hay codigo para analizar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            MessageBox.Show("No hay código para analizar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Exit Sub
         End If
 
@@ -221,9 +281,11 @@ Public Class Form1
         Dim col As Integer = 1
         Dim i As Integer = 0
 
+        ' Recorremos todo el código carácter por carácter
         While i < codigo.Length
             Dim c As Char = codigo(i)
 
+            ' Ignorar saltos de línea y ajustar contadores
             If c = vbCrLf Or c = vbLf Or c = vbCr Then
                 linea += 1
                 col = 1
@@ -231,6 +293,7 @@ Public Class Form1
                 Continue While
             End If
 
+            ' Ignorar espacios en blanco
             If Char.IsWhiteSpace(c) Then
                 col += 1
                 i += 1
@@ -240,56 +303,37 @@ Public Class Form1
             Dim token As String = ""
             Dim colInicio As Integer = col
 
-            ' >>> 1. REGLA: DETECTAR COMENTARIOS (//) <<<
+            ' REGLA 1: COMENTARIOS (//)
             If c = "/"c AndAlso i + 1 < codigo.Length AndAlso codigo(i + 1) = "/"c Then
                 While i < codigo.Length AndAlso codigo(i) <> vbCr AndAlso codigo(i) <> vbLf
                     token &= codigo(i)
                     i += 1
                     col += 1
                 End While
-
-                Dim filaComentario As New ListViewItem(token)
-                filaComentario.SubItems.Add("Comentario")
-                filaComentario.SubItems.Add(linea.ToString())
-                filaComentario.SubItems.Add(colInicio.ToString())
-
-                ' Verde un poco más marcado
-                filaComentario.BackColor = Color.FromArgb(190, 245, 190)
-                ListView2.Items.Add(filaComentario)
+                InsertarFila(token, "Comentario", linea, colInicio, Color.FromArgb(190, 245, 190))
                 Continue While
             End If
 
-            ' >>> 2. NUEVA REGLA MASTER: DETECTAR CADENAS DE TEXTO / LIBRERÍAS ("...") <<<
+            ' REGLA 2: CADENAS Y LIBRERÍAS ("...")
             If c = """"c Then
                 While i < codigo.Length
                     Dim charActual As Char = codigo(i)
                     token &= charActual
                     i += 1
                     col += 1
-
-                    ' Si encontramos la comilla de cierre, terminamos la cadena
-                    If token.Length > 1 AndAlso charActual = """"c Then
-                        Exit While
-                    End If
-                    ' Si hay un salto de línea imprevisto, cerramos para evitar bucles infinitos
-                    If charActual = vbCr Or charActual = vbLf Then
+                    ' Si encontramos la comilla de cierre o un salto de línea, terminamos la cadena
+                    If (token.Length > 1 AndAlso charActual = """"c) OrElse charActual = vbCr OrElse charActual = vbLf Then
                         Exit While
                     End If
                 End While
-
-                Dim filaCadena As New ListViewItem(token)
-                filaCadena.SubItems.Add("Cadena / Libreria")
-                filaCadena.SubItems.Add(linea.ToString())
-                filaCadena.SubItems.Add(colInicio.ToString())
-
-                ' Morado/Violeta pastel más intenso
-                filaCadena.BackColor = Color.FromArgb(230, 195, 255)
-                ListView2.Items.Add(filaCadena)
+                InsertarFila(token, "Cadena / Libreria", linea, colInicio, Color.FromArgb(230, 195, 255))
                 Continue While
             End If
 
-            ' >>> 3. EXTRACCIÓN NORMAL (Letras, Números, Símbolos) <<<
+            ' REGLA 3: PALABRAS, NÚMEROS E IDENTIFICADORES NORMALES
+            ' --- CAMBIO AQUÍ: QUITAMOS EL OR codigo(i) = "." ---
             If Char.IsLetter(c) Or c = "_" Or c = "#" Then
+                ' El punto "." ya NO es parte del identificador
                 While i < codigo.Length And (Char.IsLetterOrDigit(codigo(i)) Or codigo(i) = "_" Or codigo(i) = "#")
                     token &= codigo(i)
                     i += 1
@@ -302,39 +346,45 @@ Public Class Form1
                     col += 1
                 End While
             Else
+                ' Es un símbolo suelto (¡Aquí caerá el punto "." ahora!)
                 token = c
                 i += 1
                 col += 1
             End If
 
+            ' Clasificamos lo que encontramos y lo insertamos a la tabla
             Dim tipoToken As String = ClasificarToken(token)
-            Dim fila As New ListViewItem(token)
-            fila.SubItems.Add(tipoToken)
-            fila.SubItems.Add(linea.ToString())
-            fila.SubItems.Add(colInicio.ToString())
 
-            ' >>> COLORES DE FILA MÁS OSCUROS Y VIVOS <<<
+            Dim colorFila As Color = Color.White
             Select Case tipoToken
-                Case "Palabra Reservada"
-                    fila.BackColor = Color.FromArgb(255, 230, 150) ' Amarillo/Dorado más marcado
-                Case "Operador Aritmetico"
-                    fila.BackColor = Color.FromArgb(255, 185, 185) ' Rojo/Rosa más marcado
-                Case "Operador Relacional"
-                    fila.BackColor = Color.FromArgb(255, 210, 160) ' Naranja más marcado
-                Case "Simbolo"
-                    fila.BackColor = Color.FromArgb(195, 225, 255) ' Azul más marcado
-                Case "Numero"
-                    fila.BackColor = Color.FromArgb(220, 220, 220) ' Gris perfectamente visible
+                Case "Palabra Reservada" : colorFila = Color.FromArgb(255, 230, 150)
+                Case "Operador Aritmetico" : colorFila = Color.FromArgb(255, 185, 185)
+                Case "Operador Relacional" : colorFila = Color.FromArgb(255, 210, 160)
+                Case "Simbolo" : colorFila = Color.FromArgb(195, 225, 255)
+                Case "Numero" : colorFila = Color.FromArgb(220, 220, 220)
             End Select
 
-            ListView2.Items.Add(fila)
+            InsertarFila(token, tipoToken, linea, colInicio, colorFila)
         End While
+
+        ActualizarEstadisticas()
+    End Sub
+
+    ' Subrutina auxiliar para mantener limpio el código de arriba
+    Private Sub InsertarFila(texto As String, tipo As String, fila As Integer, columna As Integer, colorFondo As Color)
+        Dim item As New ListViewItem(texto)
+        item.SubItems.Add(tipo)
+        item.SubItems.Add(fila.ToString())
+        item.SubItems.Add(columna.ToString())
+        item.BackColor = colorFondo
+        ListView2.Items.Add(item)
     End Sub
 
 #End Region
 
-#Region "SINTAXIS VISUAL (Colores en vivo)"
+#Region "SINTAXIS VISUAL (Coloreado en Vivo)"
 
+    ' Prepara los arreglos para usarlos en expresiones regulares
     Private Function ConstruirRegex(arreglo() As String) As String
         Dim listaEscapada As New List(Of String)
         For Each item In arreglo
@@ -343,69 +393,223 @@ Public Class Form1
         Return String.Join("|", listaEscapada)
     End Function
 
-    Private Sub PintarPalabras(textoCrudo As String, patronRegex As String, colorLetra As Color)
-        Dim coincidencias As MatchCollection = Regex.Matches(textoCrudo, patronRegex)
-        For Each match As Match In coincidencias
-            TextBox3.Select(match.Index, match.Length)
-            TextBox3.SelectionColor = colorLetra
+    ' Aplica el color deseado a las palabras que coincidan con la expresión regular
+    Private Sub PintarPalabrasLinea(texto As String, inicioLinea As Integer, patron As String, color As Color)
+        Dim coincidencias = Regex.Matches(texto, patron)
+        For Each m As Match In coincidencias
+            TextBox3.Select(inicioLinea + m.Index, m.Length)
+            TextBox3.SelectionColor = color
         Next
     End Sub
 
+    ' Evento que se dispara cada vez que el usuario escribe o pega texto
     Private Sub TextBox3_TextChanged(sender As Object, e As EventArgs) Handles TextBox3.TextChanged
-        If TextBox3.Text = "" Then Exit Sub
+        If pintando Then Exit Sub
+        pintando = True
 
+        ' 1. Congelar control para evitar parpadeos
+        SendMessage(TextBox3.Handle, WM_SETREDRAW, False, 0)
         Dim posicionCursor As Integer = TextBox3.SelectionStart
+        Dim diferenciaCaracteres As Integer = Math.Abs(TextBox3.Text.Length - lastTextLength)
 
-        TextBox3.SelectAll()
+        Try
+            If String.IsNullOrWhiteSpace(TextBox3.Text) Then Exit Sub
+
+            ' 2. Determinar si repintamos todo el documento (Pegado) o solo una línea (Escritura normal)
+            If diferenciaCaracteres > 1 Then
+                PintarSeccionTexto(TextBox3.Text, 0)
+            Else
+                Dim numLinea As Integer = TextBox3.GetLineFromCharIndex(posicionCursor)
+                If numLinea >= 0 AndAlso numLinea < TextBox3.Lines.Length Then
+                    Dim inicio As Integer = TextBox3.GetFirstCharIndexFromLine(numLinea)
+                    PintarSeccionTexto(TextBox3.Lines(numLinea), inicio)
+                End If
+            End If
+
+        Finally
+            ' 3. Restaurar entorno y descongelar control
+            TextBox3.SelectionStart = posicionCursor
+            TextBox3.SelectionLength = 0
+            SendMessage(TextBox3.Handle, WM_SETREDRAW, True, 0)
+            TextBox3.Invalidate()
+
+            lastTextLength = TextBox3.Text.Length
+            pintando = False
+
+            ' 4. Avisar al marco izquierdo que actualice los números de línea
+            PictureBoxLineas.Invalidate()
+        End Try
+    End Sub
+
+    Private Sub TextBox3_Click(sender As Object, e As EventArgs) Handles TextBox3.Click
+        If lastHighlightedStart <> -1 Then
+            TextBox3.Select(lastHighlightedStart, lastHighlightedLength)
+            ' Regresamos el fondo a blanco (o al color de fondo de tu TextBox)
+            TextBox3.SelectionBackColor = Color.White
+            TextBox3.Select(TextBox3.SelectionStart, 0)
+            lastHighlightedStart = -1
+        End If
+    End Sub
+
+    ' Subrutina central que contiene los patrones de color
+    Private Sub PintarSeccionTexto(texto As String, inicioIndex As Integer)
+        ' Resetear a negro primero
+        TextBox3.Select(inicioIndex, texto.Length)
         TextBox3.SelectionColor = Color.Black
 
+        ' Preparar Regex de reservadas (Excluyendo #include temporalmente para manejarlo manualmente)
         Dim listaNormal As New List(Of String)
         For Each palabra In reservadas
             If palabra <> "#include" Then listaNormal.Add(palabra)
         Next
 
+        ' Expresiones regulares
         Dim regexReservadas As String = "\b(" & String.Join("|", listaNormal) & ")\b|#include\b"
         Dim regexAritmeticos As String = ConstruirRegex(operadoresAritmeticos)
         Dim regexRelacionales As String = ConstruirRegex(operadoresRelacionales)
         Dim regexSimbolos As String = ConstruirRegex(simbolos)
         Dim regexComentarios As String = "//.*"
-
-        ' Patrón para capturar texto entre comillas
         Dim regexCadenas As String = """[^""\r\n]*"""
 
-        ' Pintamos según categoría
-        PintarPalabras(TextBox3.Text, regexReservadas, Color.DarkGoldenrod)
-        PintarPalabras(TextBox3.Text, regexAritmeticos, Color.Red)
-        PintarPalabras(TextBox3.Text, regexRelacionales, Color.DarkOrange)
-        PintarPalabras(TextBox3.Text, regexSimbolos, Color.DarkBlue)
-
-        ' Pintamos las cadenas de texto en el editor (Color Púrpura)
-        PintarPalabras(TextBox3.Text, regexCadenas, Color.Purple)
-
-        ' Pintamos los comentarios al final de todo para asegurar que sobrescriban cualquier cosa
-        PintarPalabras(TextBox3.Text, regexComentarios, Color.Green)
-
-        TextBox3.Select(posicionCursor, 0)
-        TextBox3.SelectionColor = Color.Black
+        ' Colorear en orden
+        PintarPalabrasLinea(texto, inicioIndex, regexReservadas, Color.DarkGoldenrod)
+        PintarPalabrasLinea(texto, inicioIndex, regexAritmeticos, Color.Red)
+        PintarPalabrasLinea(texto, inicioIndex, regexRelacionales, Color.DarkOrange)
+        PintarPalabrasLinea(texto, inicioIndex, regexSimbolos, Color.DarkBlue)
+        PintarPalabrasLinea(texto, inicioIndex, regexCadenas, Color.Purple)
+        PintarPalabrasLinea(texto, inicioIndex, regexComentarios, Color.Green)
     End Sub
 
 #End Region
 
-#Region "EVENTOS DE INTERFAZ"
+#Region "INTERFAZ Y NUMERACIÓN DE LÍNEAS"
 
+    ' Ajuste automático del ancho de las columnas en la tabla de tokens
     Private Sub ListView2_SizeChanged(sender As Object, e As EventArgs) Handles ListView2.SizeChanged
         If ListView2.Columns.Count = 4 Then
             Dim anchoTotal As Integer = ListView2.Width - 25
-
             If anchoTotal > 0 Then
-                ListView2.Columns(0).Width = CInt(anchoTotal * 0.45) ' Token: 45%
-                ListView2.Columns(1).Width = CInt(anchoTotal * 0.35) ' Tipo: 35%
-                ListView2.Columns(2).Width = CInt(anchoTotal * 0.1) ' Línea: 10%
-                ListView2.Columns(3).Width = CInt(anchoTotal * 0.1) ' Columna: 10%
+                ListView2.Columns(0).Width = CInt(anchoTotal * 0.45)
+                ListView2.Columns(1).Width = CInt(anchoTotal * 0.35)
+                ListView2.Columns(2).Width = CInt(anchoTotal * 0.1)
+                ListView2.Columns(3).Width = CInt(anchoTotal * 0.1)
             End If
         End If
     End Sub
 
+    ' Dibuja físicamente los números en el PictureBox de la izquierda
+    Private Sub PictureBoxLineas_Paint(sender As Object, e As PaintEventArgs) Handles PictureBoxLineas.Paint
+        ' Limpiar el fondo para que los números no se encimen
+        e.Graphics.Clear(Color.White)
+
+        Dim fuenteNumeros As New Font(TextBox3.Font.FontFamily, TextBox3.Font.Size)
+        Dim brochaNumeros As New SolidBrush(Color.Black)
+
+        Try
+            ' Calcular desde qué línea debemos empezar a dibujar según el scroll
+            Dim primerCaracterVisible As Integer = TextBox3.GetCharIndexFromPosition(New Point(0, 0))
+            Dim primerLineaVisible As Integer = TextBox3.GetLineFromCharIndex(primerCaracterVisible)
+
+            For i As Integer = primerLineaVisible To TextBox3.Lines.Length - 1
+                Dim indicePrimerCaracterLinea As Integer = TextBox3.GetFirstCharIndexFromLine(i)
+
+                If indicePrimerCaracterLinea >= 0 Then
+                    Dim posicionY As Point = TextBox3.GetPositionFromCharIndex(indicePrimerCaracterLinea)
+
+                    ' Si la línea ya está oculta por debajo del cuadro de texto, salimos del bucle
+                    If posicionY.Y > TextBox3.Height Then Exit For
+
+                    ' Dibujar el número (+ 6 para compensar el borde 3D del TextBox)
+                    e.Graphics.DrawString((i + 1).ToString(), fuenteNumeros, brochaNumeros, 5, posicionY.Y + 6)
+                End If
+            Next
+        Catch ex As Exception
+            ' Evitar crasheos si se borra texto muy rápido
+        End Try
+    End Sub
+
+    ' Obligar a redibujar los números cuando el usuario mueve la barra de desplazamiento
+    Private Sub TextBox3_VScroll(sender As Object, e As EventArgs) Handles TextBox3.VScroll
+        PictureBoxLineas.Invalidate()
+    End Sub
+
+    ' Obligar a redibujar los números si el usuario cambia el tamaño de la ventana
+    Private Sub TextBox3_SizeChanged(sender As Object, e As EventArgs) Handles TextBox3.SizeChanged
+        PictureBoxLineas.Invalidate()
+    End Sub
+
+    ' Evento para el botón de la barra de herramientas
+    Private Sub btnExportarBarra_Click(sender As Object, e As EventArgs) Handles btnExportarBarra.Click
+        ' Esta simple línea "obliga" al botón a ejecutar el mismo código que el menú
+        Call ExportarToolStripMenuItem_Click(sender, e)
+    End Sub
+
+#End Region
+
+#Region "SINCRONIZACIÓN LISTA -> EDITOR"
+
+    Private Sub ListView2_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ListView2.SelectedIndexChanged
+        If ListView2.SelectedItems.Count > 0 Then
+            Dim item As ListViewItem = ListView2.SelectedItems(0)
+            Dim numLinea As Integer = CInt(item.SubItems(2).Text) - 1
+            Dim numCol As Integer = CInt(item.SubItems(3).Text) - 1
+
+            If numLinea >= 0 AndAlso numLinea < TextBox3.Lines.Length Then
+                ' 1. Limpiar el resaltado anterior
+                If lastHighlightedStart <> -1 Then
+                    TextBox3.Select(lastHighlightedStart, lastHighlightedLength)
+                    TextBox3.SelectionBackColor = Color.White
+                End If
+
+                ' 2. Calcular nueva posición
+                Dim inicioLinea As Integer = TextBox3.GetFirstCharIndexFromLine(numLinea)
+                Dim posicionGlobal As Integer = inicioLinea + numCol
+
+                ' 3. Aplicar nuevo resaltado amarillo
+                TextBox3.Select(posicionGlobal, item.Text.Length)
+                ' Busca esta línea y cámbiala:
+                TextBox3.SelectionBackColor = Color.FromArgb(230, 220, 255)
+                ' Guardar posición para limpiar después
+                lastHighlightedStart = posicionGlobal
+                lastHighlightedLength = item.Text.Length
+
+                ' 4. Enfocar y scrollear
+                TextBox3.Focus()
+                TextBox3.ScrollToCaret()
+            End If
+        End If
+    End Sub
+
+    Private Sub StatusStrip1_ItemClicked(sender As Object, e As ToolStripItemClickedEventArgs) Handles StatusStrip1.ItemClicked
+
+    End Sub
+
+    Private Sub lblEstadisticas_Click(sender As Object, e As EventArgs) Handles lblEstadisticas.Click
+
+    End Sub
+
+#End Region
+
+#Region "BARRA DE ESTADO"
+    Private Sub ActualizarEstadisticas()
+        ' Contadores
+        Dim total As Integer = ListView2.Items.Count
+        Dim res As Integer = 0, id As Integer = 0, num As Integer = 0, err As Integer = 0
+
+        ' Recorremos la tabla para contar
+        For Each item As ListViewItem In ListView2.Items
+            Select Case item.SubItems(1).Text
+                Case "Palabra Reservada" : res += 1
+                Case "Identificador" : id += 1
+                Case "Numero" : num += 1
+                Case "Desconocido" : err += 1
+            End Select
+        Next
+
+        ' Mostramos el resumen en tu nuevo lblEstadisticas
+        lblEstadisticas.Text = String.Format("Total: {0} | Reservadas: {1} | Identificadores: {2} | Errores: {3}",
+                                             total, res, id, err)
+    End Sub
 #End Region
 
 End Class
