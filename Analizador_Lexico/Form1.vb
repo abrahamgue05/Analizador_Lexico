@@ -60,10 +60,15 @@ Public Class Form1
         ListView2.Items.Clear()
     End Sub
 
+    ' ====================================================================
+    ' ABRIR ARCHIVO (Restringido a .txt y .cpp)
+    ' ====================================================================
     Private Sub AbrirToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles AbrirToolStripMenuItem.Click
         With OpenFileDialog1
-            .Filter = "Archivos de texto|*.txt|Archivos C++|*.cpp|Todos los archivos|*.*"
+            ' AQUÍ ESTÁ EL CAMBIO: El filtro ahora solo permite .txt y .cpp
+            .Filter = "Archivos soportados (*.txt, *.cpp)|*.txt;*.cpp|Archivos de texto (*.txt)|*.txt|Archivos de C++ (*.cpp)|*.cpp"
             .FileName = ""
+
             If .ShowDialog() = DialogResult.OK Then
                 nombreArchivo = .FileName
                 AbrirArchivo()
@@ -87,8 +92,10 @@ Public Class Form1
         End If
 
         With SaveFileDialog1
-            .FileName = InputBox("Escribe un nombre para el archivo", "Guardar como")
-            .Filter = "Archivos de texto|*.txt|Todos los archivos|*.*"
+            .FileName = nombreArchivo
+            ' Mismo filtro aplicado a la ventana de guardar
+            .Filter = "Archivos soportados (*.txt, *.cpp)|*.txt;*.cpp|Archivos de texto (*.txt)|*.txt|Archivos de C++ (*.cpp)|*.cpp"
+
             If .ShowDialog() = DialogResult.OK Then
                 nombreArchivo = .FileName
                 GuardarEnDisco()
